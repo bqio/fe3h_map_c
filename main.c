@@ -1,13 +1,35 @@
 #include "stdio.h"
+#include "stdint.h"
 #include "string.h"
 
-int unpack();
+void unpack(char file_path[]);
+uint8_t validate_file(FILE *fp);
 
 struct OFFSETS
 {
-  unsigned int start;
-  unsigned int len;
+  uint32_t start;
+  uint32_t len;
 };
+
+uint8_t validate_file(FILE *fp)
+{
+  uint32_t lines_count;
+  uint32_t first_offset;
+
+  fseek(fp, 0, 0);
+  fread(&lines_count, 4, 1, fp);
+  fseek(fp, (8 * lines_count) + 4, 0);
+  fread(&first_offset, 4, 1, fp);
+
+  if (((8 * lines_count) + 4) == first_offset)
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
 
 int main(int argc, char *argv[])
 {
@@ -31,12 +53,20 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-int unpack(char file_path[])
+void unpack(char file_path[])
 {
   FILE *fsrc;
-  FILE *fdst;
 
   fsrc = fopen(file_path, "r");
+
+  if (!validate_file(fsrc))
+  {
+    fclose(fsrc);
+    printf("Incorrect file %s", file_path);
+    return;
+  }
+
+  FILE *fdst;
   strcat(file_path, ".txt");
   fdst = fopen(file_path, "w");
 
